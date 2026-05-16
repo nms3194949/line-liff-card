@@ -110,8 +110,7 @@
     async function shareReferral(code, referrerName) {
       document.getElementById("status").innerText = "準備分享推薦卡片...";
 
-      const botBasicId = "%40347atadw";
-      const bindUrl = "https://line.me/R/oaMessage/" + botBasicId + "/?text=" + encodeURIComponent("推薦碼 " + code);
+      const bindUrl = "https://line.me/R/ti/p/@347atadw";
 
       const flexPayload = {
         "type": "flex",
@@ -178,9 +177,9 @@
                 "style": "primary",
                 "color": "#C9A84C",
                 "action": {
-                  "type": "uri",
+                  "type": "message",
                   "label": "🚀 點我使用推薦碼加入",
-                  "uri": bindUrl
+                  "text": "推薦碼 " + code
                 }
               }
             ]
