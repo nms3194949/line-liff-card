@@ -12,7 +12,6 @@
 
   <script>
     const liffId = "2010103902-wpnEOInb";
-    // GAS 部署 URL（doGet 驗證端點）
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzMva3AAJfWxcnpFC_EiwT7M4tGBJU9rsKkFQ9w1vWeCVgrIje1yToK5o6d4PGDJGvf/exec";
 
     async function main() {
@@ -34,6 +33,7 @@
           return;
         }
 
+        // ── 名片分享模式 ──
         const name = params.get('name');
         const img1 = params.get('img1');
         const img2 = params.get('img2');
@@ -43,7 +43,7 @@
           return;
         }
 
-        // ── 後端驗證：確認期限與身份 ──
+        // 後端驗證
         const userId = liff.getContext().userId;
         const verifyUrl = GAS_URL + "?api=verify&name=" + encodeURIComponent(name) + "&userId=" + encodeURIComponent(userId);
         const verifyRes = await fetch(verifyUrl);
@@ -54,7 +54,6 @@
           return;
         }
 
-        // ── 驗證通過，組裝名片 ──
         let forwardUrl = "https://liff.line.me/" + liffId + "?name=" + encodeURIComponent(name) + "&img1=" + encodeURIComponent(img1);
         if (img2) forwardUrl += "&img2=" + encodeURIComponent(img2);
 
@@ -65,20 +64,15 @@
             "type": "box",
             "layout": "vertical",
             "paddingAll": "0px",
-            "contents": [
-              {
-                "type": "image",
-                "url": imgUrl,
-                "size": "full",
-                "aspectMode": "cover",
-                "aspectRatio": "16:10",
-                "gravity": "center",
-                "action": {
-                  "type": "uri",
-                  "uri": forwardUrl
-                }
-              }
-            ]
+            "contents": [{
+              "type": "image",
+              "url": imgUrl,
+              "size": "full",
+              "aspectMode": "cover",
+              "aspectRatio": "16:10",
+              "gravity": "center",
+              "action": { "type": "uri", "uri": forwardUrl }
+            }]
           }
         });
 
@@ -88,10 +82,7 @@
         const flexPayload = {
           "type": "flex",
           "altText": name + " 的雙面專屬名片",
-          "contents": {
-            "type": "carousel",
-            "contents": bubbles
-          }
+          "contents": { "type": "carousel", "contents": bubbles }
         };
 
         if (liff.isApiAvailable('shareTargetPicker')) {
@@ -106,105 +97,26 @@
       }
     }
 
-    // ── 推薦碼分享函式 ──
+    // ── 推薦碼分享：純文字訊息 + oaMessage 連結 ──
     async function shareReferral(code, referrerName) {
-      document.getElementById("status").innerText = "準備分享推薦卡片...";
+      document.getElementById("status").innerText = "準備分享推薦訊息...";
 
-      const bindUrl = "https://line.me/R/ti/p/@347atadw";
+      // 完整 UID 當推薦碼，帶入 oaMessage 連結讓對方自動帶入文字
+      const oaUrl = "https://line.me/R/oaMessage/%40347atadw/?text=" + encodeURIComponent("推薦碼 " + code);
 
-      const flexPayload = {
-        "type": "flex",
-        "altText": "🎁 " + (referrerName || "好友") + " 邀請您使用 MOMO 數位名片！",
-        "contents": {
-          "type": "bubble",
-          "size": "mega",
-          "header": {
-            "type": "box",
-            "layout": "vertical",
-            "backgroundColor": "#1A1A2E",
-            "paddingAll": "20px",
-            "contents": [
-              {
-                "type": "text",
-                "text": "🎁 好友邀請",
-                "color": "#C9A84C",
-                "weight": "bold",
-                "size": "lg",
-                "align": "center"
-              },
-              {
-                "type": "text",
-                "text": (referrerName ? "「" + referrerName + "」" : "您的好友") + " 邀請您使用 MOMO 數位名片",
-                "color": "#7A9AB5",
-                "size": "sm",
-                "align": "center",
-                "margin": "xs",
-                "wrap": true
-              }
-            ]
-          },
-          "body": {
-            "type": "box",
-            "layout": "vertical",
-            "backgroundColor": "#0D1B2A",
-            "paddingAll": "20px",
-            "spacing": "md",
-            "contents": [
-              {
-                "type": "box",
-                "layout": "vertical",
-                "backgroundColor": "#162030",
-                "cornerRadius": "12px",
-                "paddingAll": "20px",
-                "contents": [
-                  { "type": "text", "text": "專屬推薦碼", "color": "#7A9AB5", "size": "xs", "align": "center" },
-                  { "type": "text", "text": code, "color": "#C9A84C", "size": "xxl", "weight": "bold", "align": "center", "margin": "sm" }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "vertical",
-                "backgroundColor": "#0D2A1A",
-                "cornerRadius": "8px",
-                "paddingAll": "14px",
-                "contents": [
-                  { "type": "text", "text": "🎁 加入即獲得 15 天免費試用", "color": "#4CAF7D", "size": "sm", "weight": "bold" },
-                  { "type": "text", "text": "立即上傳您的數位名片，無限轉發分享！", "color": "#7A9AB5", "size": "xs", "wrap": true, "margin": "xs" }
-                ]
-              },
-              {
-                "type": "button",
-                "style": "primary",
-                "color": "#C9A84C",
-                "action": {
-                  "type": "uri",
-                  "label": "➕ 加入官方 LINE 領取試用",
-                  "uri": "https://line.me/R/ti/p/@347atadw"
-                }
-              },
-              {
-                "type": "box",
-                "layout": "vertical",
-                "backgroundColor": "#162030",
-                "cornerRadius": "8px",
-                "paddingAll": "10px",
-                "margin": "sm",
-                "contents": [{
-                  "type": "text",
-                  "text": "💡 加入後在對話視窗輸入推薦碼即可完成綁定",
-                  "color": "#7A9AB5",
-                  "size": "xs",
-                  "wrap": true,
-                  "align": "center"
-                }]
-              }
-            ]
-          }
-        }
+      const inviteText =
+        "🎁 " + (referrerName ? "「" + referrerName + "」" : "好友") + " 送你一張【MOMO 數位名片體驗券】！\n\n" +
+        "加入即獲得 15 天免費試用，無限轉發專屬數位名片 😊\n\n" +
+        "📲 點連結加入，推薦碼會自動帶入 👇\n" +
+        oaUrl;
+
+      const textPayload = {
+        "type": "text",
+        "text": inviteText
       };
 
       if (liff.isApiAvailable('shareTargetPicker')) {
-        const res = await liff.shareTargetPicker([flexPayload]);
+        const res = await liff.shareTargetPicker([textPayload]);
         if (res || !res) liff.closeWindow();
       } else {
         document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
