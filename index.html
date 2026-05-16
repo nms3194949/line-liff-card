@@ -102,7 +102,9 @@
       document.getElementById("status").innerText = "準備分享推薦訊息...";
 
       // 完整 UID 當推薦碼，帶入 oaMessage 連結讓對方自動帶入文字
-      const oaUrl = "https://line.me/R/oaMessage/%40347atadw/?text=" + encodeURIComponent("推薦碼 " + code);
+      // LINE oaMessage 格式：點擊後開啟 Bot 聊天室並自動帶入推薦碼
+      const encodedText = encodeURIComponent("推薦碼 " + code);
+      const oaUrl = "https://line.me/R/oaMessage/%40347atadw/?" + encodedText;
 
       const inviteText =
         "🎁 " + (referrerName ? "「" + referrerName + "」" : "好友") + " 送你一張【MOMO 數位名片體驗券】！\n\n" +
