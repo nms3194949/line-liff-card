@@ -15,7 +15,6 @@
 
     async function main() {
       try {
-        // 1. 初始化 LIFF
         await liff.init({ liffId: liffId });
 
         if (!liff.isInClient()) {
@@ -23,55 +22,66 @@
           return;
         }
 
-        // 2. 從網址列抓取 GAS 帶過來的參數 (姓名與圖片網址)
+        // 1. 從網址抓取兩張圖片的參數
         const params = new URLSearchParams(window.location.search);
         const name = params.get('name');
-        const imgUrl = params.get('img');
+        const img1 = params.get('img1');
+        const img2 = params.get('img2'); // 可能為 null (如果是單面名片)
 
-        if (!name || !imgUrl) {
+        if (!name || !img1) {
           document.getElementById("status").innerText = "❌ 找不到名片資料！";
           return;
         }
 
-        // 3. 準備分享出去的卡片
-        const forwardUrl = "https://liff.line.me/" + liffId + "?name=" + encodeURIComponent(name) + "&img=" + encodeURIComponent(imgUrl);
+        // 2. 組裝未來朋友點擊時要跳轉的 LIFF 網址
+        let forwardUrl = "https://liff.line.me/" + liffId + "?name=" + encodeURIComponent(name) + "&img1=" + encodeURIComponent(img1);
+        if (img2) {
+          forwardUrl += "&img2=" + encodeURIComponent(img2);
+        }
 
+        // 3. 建立單一圖卡的輔助函式
+        const createCardBubble = (imgUrl) => ({
+          "type": "bubble",
+          "size": "giga",
+          "body": {
+            "type": "box",
+            "layout": "vertical",
+            "paddingAll": "0px",
+            "contents": [
+              {
+                "type": "image",
+                "url": imgUrl,
+                "size": "full",
+                "aspectMode": "cover",
+                "aspectRatio": "16:10",
+                "gravity": "center",
+                "action": {
+                  "type": "uri",
+                  "uri": forwardUrl
+                }
+              }
+            ]
+          }
+        });
+
+        // 4. 將正面與背面(如果有)放入陣列
+        const bubbles = [createCardBubble(img1)];
+        if (img2) bubbles.push(createCardBubble(img2));
+
+        // 5. 組裝為 Carousel 格式
         const flexPayload = {
           "type": "flex",
-          "altText": name + " 的專屬名片",
+          "altText": name + " 的雙面專屬名片",
           "contents": {
-            "type": "bubble",
-            "size": "giga",
-            "body": {
-              "type": "box",
-              "layout": "vertical",
-              "paddingAll": "0px",
-              "contents": [
-                {
-                  "type": "image",
-                  "url": imgUrl,
-                  "size": "full",
-                  "aspectMode": "cover",
-                  "aspectRatio": "16:10",
-                  "gravity": "center",
-                  "action": {
-                    "type": "uri",
-                    "uri": forwardUrl
-                  }
-                }
-              ]
-            }
+            "type": "carousel",
+            "contents": bubbles
           }
         };
 
-        // 4. 無縫全自動觸發！(組裝完立刻呼叫 shareTargetPicker)
+        // 6. 全自動觸發分享
         if (liff.isApiAvailable('shareTargetPicker')) {
           const res = await liff.shareTargetPicker([flexPayload]);
-          
-          // 無論是分享成功或取消，都自動關閉網頁，不留痕跡
-          if (res || !res) {
-            liff.closeWindow(); 
-          }
+          if (res || !res) liff.closeWindow(); 
         } else {
           document.getElementById("status").innerText = "⚠️ 尚未開啟 Share Target Picker 權限！";
         }
@@ -81,7 +91,6 @@
       }
     }
 
-    // 啟動主程式
     main();
   </script>
 </body>
