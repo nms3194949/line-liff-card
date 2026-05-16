@@ -20,11 +20,20 @@
         await liff.init({ liffId: liffId });
 
         if (!liff.isInClient()) {
-          document.getElementById("status").innerText = "⚠️ 請在 LINE 聊天室內開啟此名片！";
+          document.getElementById("status").innerText = "⚠️ 請在 LINE 聊天室內開啟此功能！";
           return;
         }
 
         const params = new URLSearchParams(window.location.search);
+
+        // ── 推薦碼分享模式 ──
+        if (params.get('mode') === 'referral') {
+          const code = params.get('code') || '';
+          const referrerName = params.get('rname') || '';
+          await shareReferral(code, referrerName);
+          return;
+        }
+
         const name = params.get('name');
         const img1 = params.get('img1');
         const img2 = params.get('img2');
@@ -94,6 +103,96 @@
 
       } catch (err) {
         document.getElementById("status").innerText = "系統錯誤: " + err.message;
+      }
+    }
+
+    // ── 推薦碼分享函式 ──
+    async function shareReferral(code, referrerName) {
+      document.getElementById("status").innerText = "準備分享推薦卡片...";
+
+      const botBasicId = "%40347atadw";
+      const bindUrl = "https://line.me/R/oaMessage/" + botBasicId + "/?text=" + encodeURIComponent("推薦碼 " + code);
+
+      const flexPayload = {
+        "type": "flex",
+        "altText": "🎁 " + (referrerName || "好友") + " 邀請您使用 MOMO 數位名片！",
+        "contents": {
+          "type": "bubble",
+          "size": "mega",
+          "header": {
+            "type": "box",
+            "layout": "vertical",
+            "backgroundColor": "#1A1A2E",
+            "paddingAll": "20px",
+            "contents": [
+              {
+                "type": "text",
+                "text": "🎁 好友邀請",
+                "color": "#C9A84C",
+                "weight": "bold",
+                "size": "lg",
+                "align": "center"
+              },
+              {
+                "type": "text",
+                "text": (referrerName ? "「" + referrerName + "」" : "您的好友") + " 邀請您使用 MOMO 數位名片",
+                "color": "#7A9AB5",
+                "size": "sm",
+                "align": "center",
+                "margin": "xs",
+                "wrap": true
+              }
+            ]
+          },
+          "body": {
+            "type": "box",
+            "layout": "vertical",
+            "backgroundColor": "#0D1B2A",
+            "paddingAll": "20px",
+            "spacing": "md",
+            "contents": [
+              {
+                "type": "box",
+                "layout": "vertical",
+                "backgroundColor": "#162030",
+                "cornerRadius": "12px",
+                "paddingAll": "20px",
+                "contents": [
+                  { "type": "text", "text": "專屬推薦碼", "color": "#7A9AB5", "size": "xs", "align": "center" },
+                  { "type": "text", "text": code, "color": "#C9A84C", "size": "xxl", "weight": "bold", "align": "center", "margin": "sm" }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "backgroundColor": "#0D2A1A",
+                "cornerRadius": "8px",
+                "paddingAll": "14px",
+                "contents": [
+                  { "type": "text", "text": "🎁 加入即獲得 15 天免費試用", "color": "#4CAF7D", "size": "sm", "weight": "bold" },
+                  { "type": "text", "text": "立即上傳您的數位名片，無限轉發分享！", "color": "#7A9AB5", "size": "xs", "wrap": true, "margin": "xs" }
+                ]
+              },
+              {
+                "type": "button",
+                "style": "primary",
+                "color": "#C9A84C",
+                "action": {
+                  "type": "uri",
+                  "label": "🚀 點我使用推薦碼加入",
+                  "uri": bindUrl
+                }
+              }
+            ]
+          }
+        }
+      };
+
+      if (liff.isApiAvailable('shareTargetPicker')) {
+        const res = await liff.shareTargetPicker([flexPayload]);
+        if (res || !res) liff.closeWindow();
+      } else {
+        document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
       }
     }
 
