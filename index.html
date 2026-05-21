@@ -33,6 +33,13 @@
           return;
         }
 
+        // ── 投資報告分享模式 ──
+        if (params.get('mode') === 'policy') {
+          const uid = params.get('uid') || '';
+          await sharePolicy(uid);
+          return;
+        }
+
         // ── 名片分享模式 ──
         const name = params.get('name');
         const img1 = params.get('img1');
@@ -97,31 +104,58 @@
       }
     }
 
-    // ── 推薦碼分享：純文字訊息 + oaMessage 連結 ──
+    // ── 推薦碼分享 ──
     async function shareReferral(code, referrerName) {
       document.getElementById("status").innerText = "準備分享推薦訊息...";
-
-      // 完整 UID 當推薦碼，帶入 oaMessage 連結讓對方自動帶入文字
-      // LINE oaMessage 格式：點擊後開啟 Bot 聊天室並自動帶入推薦碼
       const encodedText = encodeURIComponent("推薦碼 " + code);
       const oaUrl = "https://line.me/R/oaMessage/%40347atadw/?" + encodedText;
-
       const inviteText =
         "🎁 " + (referrerName ? "「" + referrerName + "」" : "好友") + " 送你一張【MOMO 數位名片體驗券】！\n\n" +
         "加入即獲得 15 天免費試用，無限轉發專屬數位名片 😊\n\n" +
         "📲 點連結加入，推薦碼會自動帶入 👇\n" +
         oaUrl;
-
-      const textPayload = {
-        "type": "text",
-        "text": inviteText
-      };
-
+      const textPayload = { "type": "text", "text": inviteText };
       if (liff.isApiAvailable('shareTargetPicker')) {
         const res = await liff.shareTargetPicker([textPayload]);
         if (res || !res) liff.closeWindow();
       } else {
         document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
+      }
+    }
+
+    // ── 投資報告分享 ──
+    async function sharePolicy(uid) {
+      document.getElementById("status").innerText = "正在載入投資報告...";
+      try {
+        if (!uid) {
+          document.getElementById("status").innerText = "❌ 缺少客戶資料";
+          return;
+        }
+
+        // 從 GAS 取得最新 Flex JSON
+        const res  = await fetch(GAS_URL + "?api=getShareFlex&uid=" + encodeURIComponent(uid));
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById("status").innerText = "❌ " + data.error;
+          return;
+        }
+
+        const flexPayload = {
+          type: "flex",
+          altText: "MOMO FinSphere 投資報告",
+          contents: data.bubble
+        };
+
+        if (liff.isApiAvailable('shareTargetPicker')) {
+          document.getElementById("status").innerText = "請選擇要分享的對象...";
+          const res = await liff.shareTargetPicker([flexPayload]);
+          if (res || !res) liff.closeWindow();
+        } else {
+          document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
+        }
+      } catch (err) {
+        document.getElementById("status").innerText = "載入失敗: " + err.message;
       }
     }
 
