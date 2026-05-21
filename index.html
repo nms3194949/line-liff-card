@@ -23,7 +23,12 @@
           return;
         }
 
-        const params = new URLSearchParams(window.location.search);
+        // LIFF 有時把參數放在 hash 後面，需要同時檢查 search 和 hash
+        const searchStr = window.location.search ||
+                          (window.location.hash && window.location.hash.includes('?')
+                            ? '?' + window.location.hash.split('?')[1]
+                            : '');
+        const params = new URLSearchParams(searchStr);
 
         // ── 推薦碼分享模式 ──
         if (params.get('mode') === 'referral') {
