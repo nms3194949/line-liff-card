@@ -134,8 +134,24 @@
         }
 
         // 從 GAS 取得圖卡 JSON
-        const res  = await fetch(GAS_URL + "?api=getShareFundSwitch&uid=" + encodeURIComponent(uid) + "&group=" + encodeURIComponent(group));
-        const data = await res.json();
+        const fetchUrl = GAS_URL + "?api=getShareFundSwitch&uid=" + encodeURIComponent(uid) + "&group=" + encodeURIComponent(group);
+        document.getElementById("status").innerText = "URL: " + fetchUrl.substring(0, 120);
+        await new Promise(r => setTimeout(r, 3000));
+
+        const res     = await fetch(fetchUrl);
+        const rawText = await res.text();
+
+        // 先顯示原始回傳，方便 debug
+        document.getElementById("status").innerText = "GAS回傳(" + res.status + "): " + rawText.substring(0, 150);
+        await new Promise(r => setTimeout(r, 4000)); // 停4秒讓你看清楚
+
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch(e) {
+          document.getElementById("status").innerText = "JSON解析失敗: " + rawText.substring(0, 200);
+          return;
+        }
 
         if (data.error) {
           document.getElementById("status").innerText = "❌ " + data.error;
