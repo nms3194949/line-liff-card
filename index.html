@@ -142,11 +142,33 @@
           return;
         }
 
+        // 深度清理：移除所有 uri action（shareTargetPicker 對 uri 格式最嚴格）
+        function removeUriActions(obj) {
+          if (Array.isArray(obj)) return obj.map(removeUriActions);
+          if (obj && typeof obj === 'object') {
+            if (obj.action && obj.action.type === 'uri') {
+              const cleaned = Object.assign({}, obj);
+              delete cleaned.action;
+              return cleaned;
+            }
+            const result = {};
+            for (const k of Object.keys(obj)) {
+              result[k] = removeUriActions(obj[k]);
+            }
+            return result;
+          }
+          return obj;
+        }
+
+        const cleanBubble = removeUriActions(data.bubble);
+
         const flexPayload = {
           type: "flex",
           altText: "基金轉換提醒",
-          contents: data.bubble
+          contents: cleanBubble
         };
+
+        document.getElementById("status").innerText = "bubble type: " + (cleanBubble && cleanBubble.type);
 
         if (liff.isApiAvailable('shareTargetPicker')) {
           document.getElementById("status").innerText = "請選擇要分享的對象...";
@@ -156,7 +178,8 @@
           document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
         }
       } catch (err) {
-        document.getElementById("status").innerText = "載入失敗: " + err.message;
+        document.getElementById("status").innerText = "載入失敗: " + err.message + (err.code ? " code:" + err.code : "") + (err.originalError ? " | " + JSON.stringify(err.originalError) : "");
+        console.error("shareFundSwitch error:", JSON.stringify(err));
       }
     }
 
