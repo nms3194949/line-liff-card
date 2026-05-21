@@ -23,25 +23,13 @@
           return;
         }
 
-        // LIFF 有時把參數放在 hash 後面，需要同時檢查 search 和 hash
-        const searchStr = window.location.search ||
-                          (window.location.hash && window.location.hash.includes('?')
-                            ? '?' + window.location.hash.split('?')[1]
-                            : '');
-        const params = new URLSearchParams(searchStr);
+        const params = new URLSearchParams(window.location.search);
 
         // ── 推薦碼分享模式 ──
         if (params.get('mode') === 'referral') {
           const code = params.get('code') || '';
           const referrerName = params.get('rname') || '';
           await shareReferral(code, referrerName);
-          return;
-        }
-
-        // ── 基金轉換提醒分享模式 ──
-        if (params.get('mode') === 'fundswitch') {
-          const uid = params.get('uid') || '';
-          await shareFundSwitch(uid);
           return;
         }
 
@@ -109,99 +97,31 @@
       }
     }
 
-    // ── 推薦碼分享 ──
+    // ── 推薦碼分享：純文字訊息 + oaMessage 連結 ──
     async function shareReferral(code, referrerName) {
       document.getElementById("status").innerText = "準備分享推薦訊息...";
+
+      // 完整 UID 當推薦碼，帶入 oaMessage 連結讓對方自動帶入文字
+      // LINE oaMessage 格式：點擊後開啟 Bot 聊天室並自動帶入推薦碼
       const encodedText = encodeURIComponent("推薦碼 " + code);
       const oaUrl = "https://line.me/R/oaMessage/%40347atadw/?" + encodedText;
+
       const inviteText =
         "🎁 " + (referrerName ? "「" + referrerName + "」" : "好友") + " 送你一張【MOMO 數位名片體驗券】！\n\n" +
         "加入即獲得 15 天免費試用，無限轉發專屬數位名片 😊\n\n" +
         "📲 點連結加入，推薦碼會自動帶入 👇\n" +
         oaUrl;
-      const textPayload = { "type": "text", "text": inviteText };
+
+      const textPayload = {
+        "type": "text",
+        "text": inviteText
+      };
+
       if (liff.isApiAvailable('shareTargetPicker')) {
         const res = await liff.shareTargetPicker([textPayload]);
         if (res || !res) liff.closeWindow();
       } else {
         document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
-      }
-    }
-
-    // ── 基金轉換提醒分享 ──
-    async function shareFundSwitch(uid, group) {
-      document.getElementById("status").innerText = "正在載入轉換提醒...";
-      try {
-        if (!uid || !group) {
-          document.getElementById("status").innerText = "❌ 缺少必要資料";
-          return;
-        }
-
-        // 從 GAS 取得圖卡 JSON
-        const fetchUrl = GAS_URL + "?api=getShareFundSwitch&uid=" + encodeURIComponent(uid) + "&group=" + encodeURIComponent(group);
-        document.getElementById("status").innerText = "URL: " + fetchUrl.substring(0, 120);
-        await new Promise(r => setTimeout(r, 3000));
-
-        const res     = await fetch(fetchUrl);
-        const rawText = await res.text();
-
-        // 先顯示原始回傳，方便 debug
-        document.getElementById("status").innerText = "GAS回傳(" + res.status + "): " + rawText.substring(0, 150);
-        await new Promise(r => setTimeout(r, 4000)); // 停4秒讓你看清楚
-
-        let data;
-        try {
-          data = JSON.parse(rawText);
-        } catch(e) {
-          document.getElementById("status").innerText = "JSON解析失敗: " + rawText.substring(0, 200);
-          return;
-        }
-
-        if (data.error) {
-          document.getElementById("status").innerText = "❌ " + data.error;
-          return;
-        }
-
-        // 深度清理：移除所有 uri action（shareTargetPicker 對 uri 格式最嚴格）
-        function removeUriActions(obj) {
-          if (Array.isArray(obj)) return obj.map(removeUriActions);
-          if (obj && typeof obj === 'object') {
-            if (obj.action && obj.action.type === 'uri') {
-              const cleaned = Object.assign({}, obj);
-              delete cleaned.action;
-              return cleaned;
-            }
-            const result = {};
-            for (const k of Object.keys(obj)) {
-              result[k] = removeUriActions(obj[k]);
-            }
-            return result;
-          }
-          return obj;
-        }
-
-        // 前端也清空 footer，雙重保險
-        const cleanBubble = removeUriActions(data.bubble);
-        if (cleanBubble && cleanBubble.footer) delete cleanBubble.footer;
-
-        const flexPayload = {
-          type: "flex",
-          altText: "基金轉換提醒",
-          contents: cleanBubble
-        };
-
-        document.getElementById("status").innerText = "bubble type: " + (cleanBubble && cleanBubble.type);
-
-        if (liff.isApiAvailable('shareTargetPicker')) {
-          document.getElementById("status").innerText = "請選擇要分享的對象...";
-          const shareRes = await liff.shareTargetPicker([flexPayload]);
-          if (shareRes || !shareRes) liff.closeWindow();
-        } else {
-          document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
-        }
-      } catch (err) {
-        document.getElementById("status").innerText = "載入失敗: " + err.message + (err.code ? " code:" + err.code : "") + (err.originalError ? " | " + JSON.stringify(err.originalError) : "");
-        console.error("shareFundSwitch error:", JSON.stringify(err));
       }
     }
 
