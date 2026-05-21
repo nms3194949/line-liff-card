@@ -35,9 +35,8 @@
 
         // ── 基金轉換提醒分享模式 ──
         if (params.get('mode') === 'fundswitch') {
-          const uid   = params.get('uid')   || '';
-          const group = params.get('group') || '';
-          await shareFundSwitch(uid, group);
+          const uid = params.get('uid') || '';
+          await shareFundSwitch(uid);
           return;
         }
 
