@@ -160,7 +160,9 @@
           return obj;
         }
 
+        // 前端也清空 footer，雙重保險
         const cleanBubble = removeUriActions(data.bubble);
+        if (cleanBubble && cleanBubble.footer) delete cleanBubble.footer;
 
         const flexPayload = {
           type: "flex",
