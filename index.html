@@ -33,10 +33,11 @@
           return;
         }
 
-        // ── 投資報告分享模式 ──
-        if (params.get('mode') === 'policy') {
-          const uid = params.get('uid') || '';
-          await sharePolicy(uid);
+        // ── 基金轉換提醒分享模式 ──
+        if (params.get('mode') === 'fundswitch') {
+          const uid   = params.get('uid')   || '';
+          const group = params.get('group') || '';
+          await shareFundSwitch(uid, group);
           return;
         }
 
@@ -123,17 +124,17 @@
       }
     }
 
-    // ── 投資報告分享 ──
-    async function sharePolicy(uid) {
-      document.getElementById("status").innerText = "正在載入投資報告...";
+    // ── 基金轉換提醒分享 ──
+    async function shareFundSwitch(uid, group) {
+      document.getElementById("status").innerText = "正在載入轉換提醒...";
       try {
-        if (!uid) {
-          document.getElementById("status").innerText = "❌ 缺少客戶資料";
+        if (!uid || !group) {
+          document.getElementById("status").innerText = "❌ 缺少必要資料";
           return;
         }
 
-        // 從 GAS 取得最新 Flex JSON
-        const res  = await fetch(GAS_URL + "?api=getShareFlex&uid=" + encodeURIComponent(uid));
+        // 從 GAS 取得圖卡 JSON
+        const res  = await fetch(GAS_URL + "?api=getShareFundSwitch&uid=" + encodeURIComponent(uid) + "&group=" + encodeURIComponent(group));
         const data = await res.json();
 
         if (data.error) {
@@ -143,14 +144,14 @@
 
         const flexPayload = {
           type: "flex",
-          altText: "MOMO FinSphere 投資報告",
+          altText: "基金轉換提醒",
           contents: data.bubble
         };
 
         if (liff.isApiAvailable('shareTargetPicker')) {
           document.getElementById("status").innerText = "請選擇要分享的對象...";
-          const res = await liff.shareTargetPicker([flexPayload]);
-          if (res || !res) liff.closeWindow();
+          const shareRes = await liff.shareTargetPicker([flexPayload]);
+          if (shareRes || !shareRes) liff.closeWindow();
         } else {
           document.getElementById("status").innerText = "⚠️ 此環境不支援分享功能";
         }
