@@ -34,18 +34,23 @@
         }
 
         // ── 名片分享模式 ──
-        const name = params.get('name');
-        const img1 = params.get('img1');
-        const img2 = params.get('img2');
+        const row   = params.get('row')  || '';
+        const name  = params.get('name') || '';
+        const img1  = params.get('img1') || '';
+        const img2  = params.get('img2') || '';
+        const ratio = params.get('ratio') || '16:9';
 
-        if (!name || !img1) {
+        if (!img1) {
           document.getElementById("status").innerText = "❌ 找不到名片資料！";
           return;
         }
 
-        // 後端驗證
+        // 後端驗證（優先用 row，fallback 用 name）
         const userId = liff.getContext().userId;
-        const verifyUrl = GAS_URL + "?api=verify&name=" + encodeURIComponent(name) + "&userId=" + encodeURIComponent(userId);
+        const verifyUrl = GAS_URL + "?api=verify"
+          + "&row=" + encodeURIComponent(row)
+          + "&name=" + encodeURIComponent(name)
+          + "&userId=" + encodeURIComponent(userId);
         const verifyRes = await fetch(verifyUrl);
         const verifyData = await verifyRes.json();
 
@@ -68,8 +73,8 @@
               "type": "image",
               "url": imgUrl,
               "size": "full",
-              "aspectMode": "cover",
-              "aspectRatio": "16:10",
+              "aspectMode": "fit",
+              "aspectRatio": ratio,
               "gravity": "center",
               "action": { "type": "uri", "uri": forwardUrl }
             }]
